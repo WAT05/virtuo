@@ -158,6 +158,80 @@ const actors = [{
   }]
 }];
 
+
 console.log(cars);
 console.log(rentals);
 console.log(actors);
+
+function diffDate(date1, date2)
+{
+  var pickupDate = new Date(date1);
+  var returnDate = new Date(date2);
+  var diffDate = (returnDate - pickupDate)/ (24*60*60*1000)+1 ;
+  return diffDate;
+}
+function getPrices(){
+rentals.forEach(rental => 
+{
+  var car = cars.find(car => car.id === rental.carId);
+  var price = diffDate(rental.pickupDate,rental.returnDate) * car.pricePerDay + rental.distance * car.pricePerKm;
+  rental.price = price;
+});}
+
+function discount()
+{
+  rentals.forEach(rental=>
+    {
+    var duration = diffDate(rental.pickupDate, rental.returnDate);
+    if(duration>10)
+    {rental.price *= 0.5;}
+    else if(duration>4)
+    {rental.price *= 0.7;}
+    else if(duration>1)
+    {rental.price *= 0.9;}
+  });
+}
+
+function commission()
+{
+  rentals.forEach(rental=>
+    {
+      var commission = rental.price * 0.3;
+      rental.commission.insurance = commission*0.5;
+      rental.commission.treasury = diffDate(rental.pickupDate, rental.returnDate);
+      rental.commission.virtuo = commission - rental.commission.insurance - rental.commission.treasury;
+    });
+}
+
+function getDeductible(rental)
+{
+      if(rental.options.deductibleReduction) return 4 * diffDate(rental.pickupDate, rental.returnDate);
+      else return 0; 
+}
+
+function pay()
+{
+  actors.forEach(actor=>
+    {
+      var rental = rentals.find(rental => rental.id == actor.rentalId);
+      actor.payment[0].amount = rental.price + getDeductible(rental);
+      var commission = rental.commission.insurance + rental.commission.treasury + rental.commission.virtuo;
+      actor.payment[1].amount = rental.price - commission;
+      actor.payment[2].amount = rental.commission.insurance;
+      actor.payment[3].amount = rental.commission.treasury;
+      actor.payment[4].amount = rental.commission.virtuo + getDeductible(rental);
+    });
+}
+
+function addFees(){
+  rentals.forEach(rental=>{
+    rental.price += getDeductible(rental);
+  })
+}
+
+getPrices();
+discount();
+commission();
+pay();
+addFees();
+
